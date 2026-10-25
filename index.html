@@ -59,6 +59,8 @@ textarea:focus{outline:none;border-color:var(--primary)}
 .safe-row{display:flex;flex-direction:column;gap:10px}
 .btn-safe{background:var(--line-green);color:#fff;font-size:1.1em;min-height:68px;justify-content:flex-start;padding-left:22px}
 .btn-safe .em{font-size:1.3em}
+.safe-name{width:100%;font-size:1em;padding:12px 14px;border:2px solid var(--line);border-radius:14px;background:#FFFDFB;color:var(--ink);font-family:inherit;font-weight:700;margin-bottom:12px}
+.safe-name:focus{outline:none;border-color:var(--line-green)}
 .safe-last{color:var(--muted);font-size:.82em;margin:10px 0 0;text-align:center}
 .hint{color:var(--muted);font-size:.82em;margin:8px 0 0}
 #result{display:none}
@@ -90,7 +92,7 @@ textarea:focus{outline:none;border-color:var(--primary)}
 @media (prefers-color-scheme: dark){
   :root{--bg:#1A1612;--card:#26201B;--ink:#F5EEE6;--muted:#C8BDB1;--line:#3E352D;
     --danger-bg:#3A1714;--warn-bg:#3A2A10;--ok-bg:#16301A}
-  textarea,.telin{background:#1F1A16}
+  textarea,.telin,.safe-name{background:#1F1A16}
   .tabs{background:#2E2721}
   .tipbox{background:#3A2A10}
   .btn-soft{background:#3A322A;color:var(--ink)}
@@ -139,6 +141,7 @@ textarea:focus{outline:none;border-color:var(--primary)}
 
     <div class="card" style="margin-top:20px">
       <p class="label">👋 用 LINE 跟家人報平安</p>
+      <input class="safe-name" id="safeName" maxlength="10" placeholder="您的稱呼，例如：媽媽、阿公" autocomplete="off">
       <div class="safe-row">
         <a class="btn btn-safe" href="#" target="_blank" rel="noopener" data-safe="0"><span class="em">✅</span>我很好</a>
         <a class="btn btn-safe" href="#" target="_blank" rel="noopener" data-safe="1"><span class="em">🚶</span>我出門了</a>
@@ -371,14 +374,23 @@ textarea:focus{outline:none;border-color:var(--primary)}
   (function(){
     var as = document.querySelectorAll('[data-safe]');
     for(var k = 0; k < as.length; k++){
-      as[k].addEventListener('click', function(){
+      as[k].addEventListener('click', function(e){
+        var name = $('safeName').value.replace(/^\s+|\s+$/g, '');
+        if(!name){
+          e.preventDefault(); this.href = '#';
+          $('safeName').focus(); toast('請先填上您的稱呼，家人才知道是誰報平安');
+          return;
+        }
+        store('scam_safe_name', name);
         var i = +this.getAttribute('data-safe'), d = new Date();
-        var msg = '【報平安】' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hhmm(d) + '\n' + SAFE_MSG[i];
+        var msg = '【報平安】' + name + ' ' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hhmm(d) + '\n' + SAFE_MSG[i];
         this.href = 'https://line.me/R/msg/text/?' + encodeURIComponent(msg);
         store('scam_safe_t', String(d.getTime())); store('scam_safe_i', String(i));
         renderSafeLast();
       });
     }
+    $('safeName').value = store('scam_safe_name') || '';
+    $('safeName').addEventListener('change', function(){ store('scam_safe_name', this.value.replace(/^\s+|\s+$/g, '')); });
     renderSafeLast();
   })();
 
