@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const NAME = 'safe-main-v1';
+const NAME = 'safe-main-v2';
+const OA_ID = '@534agqms';   // 報平安官方帳號的 Basic ID
 const W = 2500, H = 1686, COLS = 3, ROWS = 2, CW = W / COLS, RH = H / ROWS;
 const area = (i, action) => {
   const c = i % COLS, r = Math.floor(i / COLS);
@@ -23,7 +24,7 @@ const menu = {
     area(1, { type: 'message', label: '查電話', text: '查電話' }),
     area(2, { type: 'uri', label: '撥打165', uri: 'tel:165' }),
     area(3, { type: 'uri', label: '我要報平安', uri: 'https://kftseng2oo1.github.io/safe/' }),
-    area(4, { type: 'message', label: '平安狀態', text: '平安狀態' }),
+    area(4, { type: 'uri', label: '推薦防詐', uri: 'https://line.me/R/nv/recommendOA/' + OA_ID }),
     area(5, { type: 'uri', label: '防詐App', uri: 'https://kftseng2oo1.github.io/scam/' }),
   ],
 };

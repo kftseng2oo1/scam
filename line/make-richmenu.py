@@ -32,6 +32,18 @@ def status(cx, cy, c):
         y = cy-55+k*62
         d.ellipse([cx-70, y-16, cx-38, y+16], fill='white')
         d.rounded_rectangle([cx-20, y-12, cx+75, y+12], radius=12, fill='white')
+def share(cx, cy, c):
+    # 兩個人＋愛心：推薦給親友
+    for dx, col in [(-62, c), (62, '#E0483A')]:
+        d.ellipse([cx+dx-42, cy-118, cx+dx+42, cy-34], fill=col)
+        d.pieslice([cx+dx-78, cy-30, cx+dx+78, cy+126], 180, 360, fill=col)
+        d.rectangle([cx+dx-78, cy+47, cx+dx+78, cy+80], fill=col)
+    hx, hy, r = cx, cy+100, 34
+    d.ellipse([hx-2*r, hy-r, hx, hy+r], fill='#FFFFFF'); d.ellipse([hx, hy-r, hx+2*r, hy+r], fill='#FFFFFF')
+    d.polygon([(hx-2*r+4, hy+10), (hx+2*r-4, hy+10), (hx, hy+2.2*r)], fill='#FFFFFF')
+    r -= 12
+    d.ellipse([hx-2*r, hy-r, hx, hy+r], fill='#E0483A'); d.ellipse([hx, hy-r, hx+2*r, hy+r], fill='#E0483A')
+    d.polygon([(hx-2*r+3, hy+6), (hx+2*r-3, hy+6), (hx, hy+2.3*r)], fill='#E0483A')
 def shield(cx, cy, c):
     pts = [(cx, cy-135), (cx+115, cy-90), (cx+115, cy+5)]
     for k in range(0, 101, 5):
@@ -46,7 +58,7 @@ cells = [
     (phone,     AMBER, '查電話',     '傳號碼給我'),
     (call165,   RED,   '撥打 165',   '反詐騙專線'),
     (wave,      GREEN, '我要報平安', '開啟報平安'),
-    (status,    BLUE,  '平安狀態',   '家人今天報了嗎'),
+    (share,     BLUE,  '推薦防詐',   '推薦給親友'),
     (shield,    RED,   '防詐 App',   '更多功能'),
 ]
 CW, RH = W / COLS, H / ROWS
