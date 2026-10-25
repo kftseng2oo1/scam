@@ -25,6 +25,17 @@ def call165(cx, cy, c):
 def wave(cx, cy, c):
     d.ellipse([cx-125, cy-125, cx+125, cy+125], fill=c)
     d.line([cx-62, cy+4, cx-14, cy+52, cx+70, cy-48], fill='white', width=34, joint='curve')
+def siren(cx, cy, c):
+    # 警示燈：藍紅燈罩＋底座＋光芒
+    d.rounded_rectangle([cx-120, cy+60, cx+120, cy+110], radius=14, fill=INK)
+    d.pieslice([cx-95, cy-110, cx+95, cy+80], 180, 360, fill=c)
+    d.rectangle([cx-95, cy-16, cx+95, cy+62], fill=c)
+    d.rectangle([cx, cy-16, cx+95, cy+62], fill='#C62828')
+    d.pieslice([cx-95, cy-110, cx+95, cy+80], 270, 360, fill='#C62828')
+    d.rounded_rectangle([cx-60, cy-60, cx-30, cy+30], radius=14, fill='#FFFFFF')
+    for a, L in [(-150, 60), (-120, 70), (-60, 70), (-30, 60)]:
+        r0, r1 = 130, 130 + L; t = math.radians(a)
+        d.line([cx + r0*math.cos(t), cy - 15 + r0*math.sin(t), cx + r1*math.cos(t), cy - 15 + r1*math.sin(t)], fill=AMBER, width=18)
 def status(cx, cy, c):
     d.rounded_rectangle([cx-105, cy-125, cx+105, cy+125], radius=24, fill=c)
     d.rounded_rectangle([cx-45, cy-142, cx+45, cy-100], radius=12, fill=INK)
@@ -57,7 +68,7 @@ cells = [
     (magnifier, RED,   '查可疑訊息', '轉傳或截圖給我'),
     (phone,     AMBER, '查電話',     '傳號碼給我'),
     (call165,   RED,   '撥打 165',   '反詐騙專線'),
-    (wave,      GREEN, '我要報平安', '開啟報平安'),
+    (siren,     BLUE,  '我要報警',   '110・附近警察局'),
     (share,     BLUE,  '推薦防詐',   '推薦給親友'),
     (shield,    RED,   '防詐 App',   '更多功能'),
 ]
