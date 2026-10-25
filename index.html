@@ -46,6 +46,16 @@ textarea:focus{outline:none;border-color:var(--primary)}
 .thumb{display:none;margin-top:12px;position:relative}
 .thumb img{max-width:100%;max-height:260px;border-radius:12px;border:1px solid var(--line);display:block}
 .thumb button{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:999px;padding:6px 14px;font-size:.8em}
+.tabs{display:flex;gap:6px;background:#F3ECE4;padding:6px;border-radius:18px;margin-bottom:16px}
+.tab{flex:1;border:none;background:transparent;border-radius:14px;padding:14px 6px;font-size:1em;font-weight:700;color:var(--muted);font-family:inherit;min-height:60px}
+.tab.on{background:var(--card);color:var(--primary);box-shadow:0 2px 8px rgba(80,40,0,.12)}
+.telin{width:100%;font-size:1.25em;letter-spacing:.02em;padding:14px;border:2px solid var(--line);border-radius:14px;background:#FFFDFB;color:var(--ink);font-family:inherit;font-weight:700}
+.telin:focus{outline:none;border-color:var(--primary)}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{border:2px solid var(--line);background:var(--card);border-radius:999px;padding:10px 16px;font-size:.88em;font-weight:600;color:var(--ink);font-family:inherit;text-align:left}
+.chip.on{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
+.chip.on:before{content:"✓ "}
+.tipbox{background:#FFF4E0;border-radius:14px;padding:12px 14px;font-size:.85em;margin-top:14px}
 .hint{color:var(--muted);font-size:.82em;margin:8px 0 0}
 #result{display:none}
 .verdict{border-radius:20px;padding:22px 18px;margin-bottom:16px;border:3px solid}
@@ -76,7 +86,9 @@ textarea:focus{outline:none;border-color:var(--primary)}
 @media (prefers-color-scheme: dark){
   :root{--bg:#1A1612;--card:#26201B;--ink:#F5EEE6;--muted:#C8BDB1;--line:#3E352D;
     --danger-bg:#3A1714;--warn-bg:#3A2A10;--ok-bg:#16301A}
-  textarea{background:#1F1A16}
+  textarea,.telin{background:#1F1A16}
+  .tabs{background:#2E2721}
+  .tipbox{background:#3A2A10}
   .btn-soft{background:#3A322A;color:var(--ink)}
   .btn-speak{background:#2F2742;color:#E3D9FF}
   .advice{background:#2A231C}
@@ -92,7 +104,11 @@ textarea:focus{outline:none;border-color:var(--primary)}
   </header>
 
   <div id="inputArea">
-    <div class="card">
+    <div class="tabs">
+      <button class="tab on" id="tabMsg" type="button">💬 查訊息</button>
+      <button class="tab" id="tabTel" type="button">📞 查電話</button>
+    </div>
+    <div class="card" id="paneMsg">
       <p class="label">① 把可疑的訊息貼在這裡</p>
       <textarea id="msg" placeholder="例如：簡訊、LINE 訊息、對方給的電話號碼或網址"></textarea>
       <div class="row">
@@ -103,6 +119,15 @@ textarea:focus{outline:none;border-color:var(--primary)}
       <label class="btn btn-soft" for="pic">📷 選擇截圖／拍照</label>
       <input id="pic" type="file" accept="image/*" style="display:none">
       <div class="thumb" id="thumb"><img id="thumbImg" alt="截圖"><button type="button" id="rmPic">移除</button></div>
+    </div>
+
+    <div class="card" id="paneTel" style="display:none">
+      <p class="label">① 打來的電話號碼</p>
+      <input class="telin" id="tel" type="tel" inputmode="tel" autocomplete="off" placeholder="例如 +886 912 345 678">
+      <p class="label" style="margin-top:18px">② 對方說了什麼？（可以點好幾個）</p>
+      <div class="chips" id="chips"></div>
+      <textarea id="telNote" style="min-height:110px;margin-top:12px" placeholder="也可以自己打字，例如：說我的帳戶涉嫌洗錢"></textarea>
+      <div class="tipbox">💡 想要來電時自動跳出警告，可以請家人幫忙安裝 <b>Whoscall</b>。</div>
     </div>
 
     <button class="btn btn-main" id="checkBtn" type="button">🔍 幫我檢查</button>
@@ -246,7 +271,76 @@ textarea:focus{outline:none;border-color:var(--primary)}
       reasons: why.length ? why.slice(0, 4) : ['沒有比對到常見的詐騙說法，但不代表一定安全'],
       advice: level === 'unknown' ? '只要對方要錢、要密碼或要你點連結，都先停下來，打給家人或 165 問問看。' :
         '不要回覆、不要點連結、不要匯款。打 165 或問家人確認。',
-      source: 'local'
+      source: 'local',
+      score: score
+    };
+  }
+
+  /* ---------- 查電話 ---------- */
+  var mode = 'msg';
+  function setMode(m){
+    mode = m;
+    $('tabMsg').className = 'tab' + (m === 'msg' ? ' on' : '');
+    $('tabTel').className = 'tab' + (m === 'tel' ? ' on' : '');
+    $('paneMsg').style.display = m === 'msg' ? 'block' : 'none';
+    $('paneTel').style.display = m === 'tel' ? 'block' : 'none';
+    $('checkBtn').innerHTML = m === 'msg' ? '🔍 幫我檢查' : '🔍 查這通電話';
+    store('scam_mode', m);
+  }
+  $('tabMsg').addEventListener('click', function(){ setMode('msg'); });
+  $('tabTel').addEventListener('click', function(){ setMode('tel'); });
+
+  var CHIPS = [
+    {t:'說我涉嫌犯罪、帳戶要監管', w:5},
+    {t:'要我解除分期或改設定', w:5},
+    {t:'自稱親友，急著借錢', w:4},
+    {t:'要我去 ATM 或匯款', w:4},
+    {t:'跟我要驗證碼或密碼', w:4},
+    {t:'報明牌、帶我投資', w:5},
+    {t:'說我中獎或可以退稅', w:3},
+    {t:'說包裹、健保卡或帳戶有問題', w:3},
+    {t:'是語音電話，要我按鍵', w:3}
+  ];
+  (function(){
+    var html = '';
+    for(var i = 0; i < CHIPS.length; i++) html += '<button type="button" class="chip" data-i="' + i + '">' + CHIPS[i].t + '</button>';
+    $('chips').innerHTML = html;
+    $('chips').addEventListener('click', function(e){
+      var b = e.target; while(b && b !== this && !b.getAttribute('data-i')) b = b.parentNode;
+      if(!b || b === this) return;
+      b.className = b.className.indexOf(' on') > -1 ? 'chip' : 'chip on';
+    });
+  })();
+  function pickedChips(){
+    var out = [], bs = $('chips').getElementsByTagName('button');
+    for(var i = 0; i < bs.length; i++) if(bs[i].className.indexOf(' on') > -1) out.push(CHIPS[+bs[i].getAttribute('data-i')]);
+    return out;
+  }
+  function clearTel(){
+    $('tel').value = ''; $('telNote').value = '';
+    var bs = $('chips').getElementsByTagName('button');
+    for(var i = 0; i < bs.length; i++) bs[i].className = 'chip';
+  }
+
+  function telCheck(num, chips, note){
+    var n = num.replace(/[\s\-()（）]/g, ''), score = 0, why = [];
+    if(n === '165'){
+      return {level:'safe', summary:'165 是警政署反詐騙專線', reasons:['這是官方的反詐騙諮詢電話'],
+        advice:'如果是你打給 165 就沒問題；若有人「自稱 165」打給你要你匯款，那是假的。', source:'local', score:0};
+    }
+    if(/^\+886/.test(n) || /^00886/.test(n)){ score += 4; why.push('號碼前面有「+886」，代表是從國外線路打進來，冒充台灣號碼'); }
+    else if(/^\+/.test(n) || /^00/.test(n)){ score += 3; why.push('這是國外打來的電話'); }
+    for(var i = 0; i < chips.length; i++){ score += chips[i].w; if(why.length < 4) why.push('對方' + chips[i].t); }
+    var lc = localCheck(note);
+    if(lc && lc.score){ score += lc.score; for(var j = 0; j < lc.reasons.length && why.length < 4; j++) why.push(lc.reasons[j]); }
+    var level = score >= 5 ? 'danger' : (score >= 2 ? 'suspicious' : 'unknown');
+    return {
+      level: level,
+      summary: level === 'danger' ? '這很像詐騙電話！' : (level === 'suspicious' ? '這通電話有可疑的地方' : '光看號碼無法確定'),
+      reasons: why.length ? why : ['詐騙集團常換號碼或假冒號碼，光看號碼看不出來'],
+      advice: level === 'danger' ? '馬上掛掉，不要按任何鍵、不要匯款。有疑問打 165。' :
+        '先掛掉電話，再自己撥打官方號碼確認（例如銀行卡片背面的客服電話）。',
+      source: 'local', score: score
     };
   }
 
@@ -269,24 +363,39 @@ textarea:focus{outline:none;border-color:var(--primary)}
 
   /* ---------- 查證流程 ---------- */
   $('checkBtn').addEventListener('click', function(){
-    var text = $('msg').value.replace(/^\s+|\s+$/g, '');
-    if(!text && !imgB64){ toast('請先貼上訊息，或選一張截圖'); return; }
+    var text, local, img = null, preview, kind;
+    if(mode === 'tel'){
+      var num = $('tel').value.replace(/^\s+|\s+$/g, ''), chips = pickedChips(), note = $('telNote').value.replace(/^\s+|\s+$/g, '');
+      if(!num && !chips.length && !note){ toast('請輸入電話號碼，或點選對方說了什麼'); return; }
+      var said = []; for(var i = 0; i < chips.length; i++) said.push(chips[i].t);
+      if(note) said.push(note);
+      text = '【來電查證】\n來電號碼：' + (num || '（沒有提供）') + '\n對方說的內容：' + (said.length ? said.join('；') : '（沒有提供）');
+      local = telCheck(num, chips, note);
+      preview = '來電 ' + (num || '（未填號碼）') + (said.length ? '：' + said.join('、') : '');
+      kind = 'tel';
+    } else {
+      text = $('msg').value.replace(/^\s+|\s+$/g, '');
+      if(!text && !imgB64){ toast('請先貼上訊息，或選一張截圖'); return; }
+      local = localCheck(text); img = imgB64;
+      preview = text ? (text.length > 120 ? text.slice(0, 120) + '…' : text) : '（一張截圖）';
+      kind = 'msg';
+    }
     stopSpeak();
     $('inputArea').style.display = 'none'; $('result').style.display = 'none'; $('loading').style.display = 'block';
     window.scrollTo(0, 0);
-    var local = localCheck(text);
-    aiCheck(text.slice(0, 4000), imgB64, function(err, d){
+    if(local && local.level === 'safe' && kind === 'tel'){ $('loading').style.display = 'none'; show(local, preview, kind); return; }
+    aiCheck(text.slice(0, 4000), img, function(err, d){
       $('loading').style.display = 'none';
       if(err){
-        if(local){ local.offline = true; show(local, text); }
+        if(local){ local.offline = true; show(local, preview, kind); }
         else { $('inputArea').style.display = 'block'; toast('連不上網路，截圖暫時無法檢查，請打 165 詢問'); }
         return;
       }
-      // AI 說安全但本機規則判定危險 → 取較嚴重者
-      if(local && local.level === 'danger' && d.level === 'safe'){
+      // AI 說安全但本機比對有疑慮 → 取較嚴重者
+      if(local && local.score >= 2 && d.level === 'safe'){
         d.level = 'suspicious'; d.reasons = (d.reasons || []).concat([local.reasons[0]]);
       }
-      show(d, text);
+      show(d, preview, kind);
     });
   });
 
@@ -298,7 +407,7 @@ textarea:focus{outline:none;border-color:var(--primary)}
   };
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
-  function show(d, text){
+  function show(d, preview, kind){
     var lv = LV[d.level] || LV.unknown;
     $('verdict').className = 'verdict ' + lv.cls;
     $('vIcon').textContent = lv.icon; $('vLvl').textContent = lv.name; $('vSum').textContent = d.summary || '';
@@ -310,8 +419,7 @@ textarea:focus{outline:none;border-color:var(--primary)}
       : (d.offline ? '目前連不上網路，這是手機內建的簡易比對，僅供參考。' : '手機內建比對結果，僅供參考。');
 
     lastSpeech = lv.name + '。' + (d.summary || '') + '。原因：' + reasons.join('。') + '。建議：' + (d.advice || '');
-    var preview = text ? (text.length > 120 ? text.slice(0, 120) + '…' : text) : '（一張截圖）';
-    lastShare = '【防詐查證】我收到這則訊息，系統判斷「' + lv.name + '」，可以幫我看看嗎？\n\n' + preview;
+    lastShare = '【防詐查證】我' + (kind === 'tel' ? '接到這通電話' : '收到這則訊息') + '，系統判斷「' + lv.name + '」，可以幫我看看嗎？\n\n' + preview;
     $('lineBtn').href = 'https://line.me/R/msg/text/?' + encodeURIComponent(lastShare);
 
     $('result').style.display = 'block';
@@ -321,7 +429,7 @@ textarea:focus{outline:none;border-color:var(--primary)}
 
   $('againBtn').addEventListener('click', function(){
     stopSpeak(); $('result').style.display = 'none'; $('inputArea').style.display = 'block';
-    $('msg').value = ''; clearPic(); window.scrollTo(0, 0);
+    $('msg').value = ''; clearPic(); clearTel(); window.scrollTo(0, 0);
   });
 
   /* ---------- 語音 ---------- */
@@ -354,6 +462,7 @@ textarea:focus{outline:none;border-color:var(--primary)}
     $('hist').innerHTML = html; $('histCard').style.display = 'block';
   }
   renderHist();
+  setMode(store('scam_mode') === 'tel' ? 'tel' : 'msg');
 })();
 </script>
 </body>
