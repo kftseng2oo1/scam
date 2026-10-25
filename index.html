@@ -56,6 +56,10 @@ textarea:focus{outline:none;border-color:var(--primary)}
 .chip.on{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
 .chip.on:before{content:"✓ "}
 .tipbox{background:#FFF4E0;border-radius:14px;padding:12px 14px;font-size:.85em;margin-top:14px}
+.safe-row{display:flex;flex-direction:column;gap:10px}
+.btn-safe{background:var(--line-green);color:#fff;font-size:1.1em;min-height:68px;justify-content:flex-start;padding-left:22px}
+.btn-safe .em{font-size:1.3em}
+.safe-last{color:var(--muted);font-size:.82em;margin:10px 0 0;text-align:center}
 .hint{color:var(--muted);font-size:.82em;margin:8px 0 0}
 #result{display:none}
 .verdict{border-radius:20px;padding:22px 18px;margin-bottom:16px;border:3px solid}
@@ -132,6 +136,16 @@ textarea:focus{outline:none;border-color:var(--primary)}
 
     <button class="btn btn-main" id="checkBtn" type="button">🔍 幫我檢查</button>
     <p class="hint" style="text-align:center">不確定的時候，先別匯款、別給驗證碼</p>
+
+    <div class="card" style="margin-top:20px">
+      <p class="label">👋 用 LINE 跟家人報平安</p>
+      <div class="safe-row">
+        <a class="btn btn-safe" href="#" target="_blank" rel="noopener" data-safe="0"><span class="em">✅</span>我很好</a>
+        <a class="btn btn-safe" href="#" target="_blank" rel="noopener" data-safe="1"><span class="em">🚶</span>我出門了</a>
+        <a class="btn btn-safe" href="#" target="_blank" rel="noopener" data-safe="2"><span class="em">🏠</span>我到家了</a>
+      </div>
+      <p class="safe-last" id="safeLast">按下去會打開 LINE，選好友或家族群組就能傳送</p>
+    </div>
   </div>
 
   <div class="loading" id="loading"><div class="spinner"></div>正在幫您檢查，請稍等…</div>
@@ -343,6 +357,30 @@ textarea:focus{outline:none;border-color:var(--primary)}
       source: 'local', score: score
     };
   }
+
+  /* ---------- 報平安（LINE 分享，不經後端） ---------- */
+  var SAFE_MSG = ['我很好，請放心 ✅', '我出門了，晚點回來 🚶', '我平安到家了 🏠'];
+  function hhmm(d){ return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function renderSafeLast(){
+    var t = parseInt(store('scam_safe_t') || '0', 10), i = parseInt(store('scam_safe_i') || '0', 10);
+    if(!t) return;
+    var d = new Date(t), now = new Date();
+    var day = d.toDateString() === now.toDateString() ? '今天' : (d.getMonth() + 1) + '/' + d.getDate();
+    $('safeLast').textContent = '上次報平安：' + day + ' ' + hhmm(d) + '「' + SAFE_MSG[i].replace(/\s\S+$/, '') + '」';
+  }
+  (function(){
+    var as = document.querySelectorAll('[data-safe]');
+    for(var k = 0; k < as.length; k++){
+      as[k].addEventListener('click', function(){
+        var i = +this.getAttribute('data-safe'), d = new Date();
+        var msg = '【報平安】' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hhmm(d) + '\n' + SAFE_MSG[i];
+        this.href = 'https://line.me/R/msg/text/?' + encodeURIComponent(msg);
+        store('scam_safe_t', String(d.getTime())); store('scam_safe_i', String(i));
+        renderSafeLast();
+      });
+    }
+    renderSafeLast();
+  })();
 
   /* ---------- 呼叫 AI ---------- */
   function aiCheck(text, img, cb){
